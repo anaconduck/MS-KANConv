@@ -1,0 +1,31 @@
+# PyTorch
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Project Specific
+data/
+results/
+*.json
+!exp*_ablation_results.json
+!exp*_benchmark_results.json
+!exp*_efficiency_results.json
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# MacOS
+.DS_Store
