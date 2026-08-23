@@ -1,17 +1,24 @@
 import sys
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
 from config import TRAIN_CONFIG, ABLATION_VARIANTS
 from models.ms_kanconv import build_ms_kanconv
 from models.baselines import get_baseline_model
 from train import (
-    set_seed, get_device, train_model, save_results,
-    print_results_table, count_parameters,
+    set_seed,
+    get_device,
+    train_model,
+    save_results,
+    print_results_table,
+    count_parameters,
 )
 from datasets.uci_har import load_uci_har
 from datasets.pamap2 import load_pamap2, get_pamap2_fold
 from datasets.mhealth import load_mhealth, get_mhealth_fold
+
+
 def run_ablation_single_dataset(dataset_name: str, device=None):
     if device is None:
         device = get_device()
@@ -49,7 +56,9 @@ def run_ablation_single_dataset(dataset_name: str, device=None):
                 )
             print(f"  Params: {count_parameters(model):,}")
             result = train_model(
-                model, train_ds, test_ds,
+                model,
+                train_ds,
+                test_ds,
                 model_name=variant,
                 dataset_name=dataset_name,
                 device=device,
@@ -59,18 +68,20 @@ def run_ablation_single_dataset(dataset_name: str, device=None):
         avg_result = {
             "model_name": variant,
             "dataset_name": dataset_name,
-            "best_accuracy": sum(r["best_accuracy"]
-                                 for r in fold_results) / len(fold_results),
-            "best_f1_weighted": sum(r["best_f1_weighted"]
-                                    for r in fold_results) / len(fold_results),
-            "best_f1_macro": sum(r["best_f1_macro"]
-                                 for r in fold_results) / len(fold_results),
-            "training_time_sec": sum(r["training_time_sec"]
-                                     for r in fold_results) / len(fold_results),
+            "best_accuracy": sum(r["best_accuracy"] for r in fold_results)
+            / len(fold_results),
+            "best_f1_weighted": sum(r["best_f1_weighted"] for r in fold_results)
+            / len(fold_results),
+            "best_f1_macro": sum(r["best_f1_macro"] for r in fold_results)
+            / len(fold_results),
+            "training_time_sec": sum(r["training_time_sec"] for r in fold_results)
+            / len(fold_results),
             "num_parameters": fold_results[0]["num_parameters"],
         }
         results.append(avg_result)
     return results
+
+
 def run_ablation():
     device = get_device()
     all_results = {}
@@ -83,5 +94,7 @@ def run_ablation():
         print_results_table(results, title=f"Ablation — {dataset_name}")
     save_results(all_results, "exp2_ablation_results.json")
     return all_results
+
+
 if __name__ == "__main__":
     run_ablation()

@@ -4,8 +4,11 @@ import torch
 from torch.utils.data import TensorDataset
 from sklearn.model_selection import StratifiedKFold
 from config import DATA_DIR, MHEALTH_CONFIG
-SENSOR_COLS = list(range(0, 3)) + list(range(5, 23))  
+
+SENSOR_COLS = list(range(0, 3)) + list(range(5, 23))
 NUM_SUBJECTS = 10
+
+
 def _sliding_window(data, labels, window_size, overlap):
     step = int(window_size * (1 - overlap))
     windows = []
@@ -21,6 +24,8 @@ def _sliding_window(data, labels, window_size, overlap):
     if len(windows) == 0:
         return np.empty((0, window_size, data.shape[1])), np.empty(0, dtype=int)
     return np.array(windows, dtype=np.float32), np.array(window_labels, dtype=int)
+
+
 def load_mhealth():
     dataset_dir = os.path.join(DATA_DIR, "mhealth")
     possible_paths = [
@@ -50,7 +55,7 @@ def load_mhealth():
             continue
         data = np.loadtxt(fpath)
         sensor_data = data[:, SENSOR_COLS]
-        labels = data[:, 23].astype(int)  
+        labels = data[:, 23].astype(int)
         sensor_data = np.nan_to_num(sensor_data, nan=0.0)
         X_windows, y_windows = _sliding_window(
             sensor_data, labels, cfg.window_size, cfg.overlap
@@ -70,8 +75,9 @@ def load_mhealth():
         X[:, c, :] = (X[:, c, :] - mean) / std
     print(f"  Total: {X.shape}, Classes: {len(np.unique(y))}")
     return X, y, subject_ids, cfg
-def get_mhealth_fold(X, y, subject_ids, fold: int, n_folds: int = 5,
-                     seed: int = 42):
+
+
+def get_mhealth_fold(X, y, subject_ids, fold: int, n_folds: int = 5, seed: int = 42):
     skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=seed)
     splits = list(skf.split(X, y))
     train_idx, test_idx = splits[fold]

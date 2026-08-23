@@ -2,6 +2,7 @@ import os
 import zipfile
 import requests
 from tqdm import tqdm
+
 DATASETS = {
     "uci_har": {
         "url": "https://archive.ics.uci.edu/ml/machine-learning-databases/00240/UCI%20HAR%20Dataset.zip",
@@ -16,6 +17,8 @@ DATASETS = {
         "extract_dir": "MHEALTHDATASET",
     },
 }
+
+
 def download_file(url: str, dest_path: str):
     print(f"  Downloading from {url}")
     response = requests.get(url, stream=True, timeout=120)
@@ -27,6 +30,8 @@ def download_file(url: str, dest_path: str):
         for chunk in response.iter_content(chunk_size=8192):
             f.write(chunk)
             pbar.update(len(chunk))
+
+
 def download_dataset(name: str, data_dir: str):
     info = DATASETS[name]
     dataset_dir = os.path.join(data_dir, name)
@@ -48,6 +53,8 @@ def download_dataset(name: str, data_dir: str):
         zf.extractall(dataset_dir)
     print(f"[{name}] Done! Extracted to {dataset_dir}")
     os.remove(zip_path)
+
+
 def download_all(data_dir: str):
     print("=" * 60)
     print("Downloading HAR Datasets")
@@ -55,8 +62,12 @@ def download_all(data_dir: str):
     for name in DATASETS:
         download_dataset(name, data_dir)
     print("\n✓ All datasets ready.")
+
+
 if __name__ == "__main__":
     import sys
+
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from config import DATA_DIR
+
     download_all(DATA_DIR)

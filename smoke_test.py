@@ -1,11 +1,15 @@
 import sys
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import torch
 import numpy as np
+
+
 def test_kan_modules():
     print("Testing KAN modules...")
     from models.kan_modules import KANActivation, KANLinear, SqueezeExcitation
+
     kan_act = KANActivation(num_channels=64, grid_size=5, spline_order=3)
     x = torch.randn(2, 64, 128)
     out = kan_act(x)
@@ -24,9 +28,12 @@ def test_kan_modules():
     out = se(x)
     assert out.shape == x.shape, f"SE shape mismatch: {out.shape}"
     print(f"  ✓ SE-Attention: {x.shape} -> {out.shape}")
+
+
 def test_ms_kanconv():
     print("\nTesting MS-KANConv model...")
     from models.ms_kanconv import MSKANConv, build_ms_kanconv
+
     configs = [
         ("UCI-HAR", 9, 6),
         ("PAMAP2", 18, 12),
@@ -38,12 +45,15 @@ def test_ms_kanconv():
         out = model(x)
         params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         assert out.shape == (2, n_cls), f"Shape mismatch for {name}"
-        print(f"  ✓ {name}: ({in_ch}, 128) -> {out.shape}, "
-              f"params={params:,}")
+        print(f"  ✓ {name}: ({in_ch}, 128) -> {out.shape}, " f"params={params:,}")
     print("\n  Testing ablation variants...")
-    variants = ["ms_kanconv_full", "ms_kanconv_no_multiscale",
-                "ms_kanconv_no_kanact", "ms_kanconv_no_kanhead",
-                "ms_kanconv_no_se"]
+    variants = [
+        "ms_kanconv_full",
+        "ms_kanconv_no_multiscale",
+        "ms_kanconv_no_kanact",
+        "ms_kanconv_no_kanhead",
+        "ms_kanconv_no_se",
+    ]
     for v in variants:
         model = build_ms_kanconv(9, 6, variant=v)
         x = torch.randn(2, 9, 128)
@@ -51,11 +61,20 @@ def test_ms_kanconv():
         params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         assert out.shape == (2, 6)
         print(f"  ✓ {v}: params={params:,}")
+
+
 def test_baselines():
     print("\nTesting baseline models...")
     from models.baselines import get_baseline_model
-    baselines = ["cnn_1d", "deep_conv_lstm", "tcn_vanilla",
-                 "tcn_attention", "transformer_har", "kan_har"]
+
+    baselines = [
+        "cnn_1d",
+        "deep_conv_lstm",
+        "tcn_vanilla",
+        "tcn_attention",
+        "transformer_har",
+        "kan_har",
+    ]
     for name in baselines:
         model = get_baseline_model(name, input_channels=9, num_classes=6)
         x = torch.randn(2, 9, 128)
@@ -63,9 +82,12 @@ def test_baselines():
         params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         assert out.shape == (2, 6), f"{name} shape mismatch: {out.shape}"
         print(f"  ✓ {name:25s}: params={params:,}")
+
+
 def test_gradient_flow():
     print("\nTesting gradient flow...")
     from models.ms_kanconv import MSKANConv
+
     model = MSKANConv(input_channels=9, num_classes=6)
     x = torch.randn(4, 9, 128)
     y = torch.randint(0, 6, (4,))
@@ -81,9 +103,15 @@ def test_gradient_flow():
                 has_grad += 1
             else:
                 no_grad += 1
-    print(f"  ✓ Gradient flow: {has_grad} params with grad, "
-          f"{no_grad} without grad (expected 0)")
-    assert no_grad == 0 or no_grad < has_grad * 0.1,        f"Too many params without gradient: {no_grad}"
+    print(
+        f"  ✓ Gradient flow: {has_grad} params with grad, "
+        f"{no_grad} without grad (expected 0)"
+    )
+    assert (
+        no_grad == 0 or no_grad < has_grad * 0.1
+    ), f"Too many params without gradient: {no_grad}"
+
+
 def main():
     print("=" * 60)
     print("MS-KANConv Smoke Test")
@@ -99,5 +127,7 @@ def main():
     print("  1. Download datasets: python run_all.py --download")
     print("  2. Run all experiments: python run_all.py")
     print("  3. Run specific experiment: python run_all.py --exp 1")
+
+
 if __name__ == "__main__":
     main()

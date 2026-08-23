@@ -7,16 +7,23 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.metrics import (
-    accuracy_score, f1_score, classification_report, confusion_matrix
+    accuracy_score,
+    f1_score,
+    classification_report,
+    confusion_matrix,
 )
 from tqdm import tqdm
 from config import TRAIN_CONFIG, RESULTS_DIR
+
+
 def set_seed(seed: int = 42):
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+
+
 def get_device():
     if torch.cuda.is_available():
         device = torch.device("cuda")
@@ -25,8 +32,12 @@ def get_device():
         device = torch.device("cpu")
         print("Using CPU")
     return device
+
+
 def count_parameters(model: nn.Module) -> int:
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
 def train_one_epoch(model, dataloader, criterion, optimizer, device):
     model.train()
     total_loss = 0.0
@@ -48,6 +59,8 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device):
     avg_loss = total_loss / len(dataloader.dataset)
     acc = accuracy_score(all_labels, all_preds)
     return avg_loss, acc
+
+
 @torch.no_grad()
 def evaluate(model, dataloader, criterion, device):
     model.eval()
@@ -75,27 +88,42 @@ def evaluate(model, dataloader, criterion, device):
         "predictions": np.array(all_preds),
         "labels": np.array(all_labels),
     }
-def train_model(model, train_dataset, test_dataset, config=None,
-                model_name="model", dataset_name="dataset",
-                device=None, verbose=True):
+
+
+def train_model(
+    model,
+    train_dataset,
+    test_dataset,
+    config=None,
+    model_name="model",
+    dataset_name="dataset",
+    device=None,
+    verbose=True,
+):
     if config is None:
         config = TRAIN_CONFIG
     if device is None:
         device = get_device()
     model = model.to(device)
     train_loader = DataLoader(
-        train_dataset, batch_size=config.batch_size,
-        shuffle=True, num_workers=config.num_workers,
-        pin_memory=True, drop_last=False,
+        train_dataset,
+        batch_size=config.batch_size,
+        shuffle=True,
+        num_workers=config.num_workers,
+        pin_memory=True,
+        drop_last=False,
     )
     test_loader = DataLoader(
-        test_dataset, batch_size=config.batch_size,
-        shuffle=False, num_workers=config.num_workers,
+        test_dataset,
+        batch_size=config.batch_size,
+        shuffle=False,
+        num_workers=config.num_workers,
         pin_memory=True,
     )
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(
-        model.parameters(), lr=config.learning_rate,
+        model.parameters(),
+        lr=config.learning_rate,
         weight_decay=1e-4,
     )
     if config.scheduler == "cosine":
@@ -109,8 +137,7 @@ def train_model(model, train_dataset, test_dataset, config=None,
     best_test_acc = 0.0
     best_test_results = None
     patience_counter = 0
-    history = {"train_loss": [], "train_acc": [],
-               "test_loss": [], "test_acc": []}
+    history = {"train_loss": [], "train_acc": [], "test_loss": [], "test_acc": []}
     start_time = time.time()
     iterator = range(1, config.epochs + 1)
     if verbose:
@@ -126,12 +153,14 @@ def train_model(model, train_dataset, test_dataset, config=None,
         history["test_loss"].append(test_results["loss"])
         history["test_acc"].append(test_results["accuracy"])
         if verbose:
-            iterator.set_postfix({
-                "tr_loss": f"{train_loss:.4f}",
-                "tr_acc": f"{train_acc:.4f}",
-                "te_acc": f"{test_results['accuracy']:.4f}",
-                "te_f1": f"{test_results['f1_weighted']:.4f}",
-            })
+            iterator.set_postfix(
+                {
+                    "tr_loss": f"{train_loss:.4f}",
+                    "tr_acc": f"{train_acc:.4f}",
+                    "te_acc": f"{test_results['accuracy']:.4f}",
+                    "te_f1": f"{test_results['f1_weighted']:.4f}",
+                }
+            )
         if test_results["accuracy"] > best_test_acc:
             best_test_acc = test_results["accuracy"]
             best_test_results = test_results.copy()
@@ -155,14 +184,19 @@ def train_model(model, train_dataset, test_dataset, config=None,
         "history": history,
     }
     if verbose:
-        print(f"\n  Best: Acc={result['best_accuracy']:.4f}, "
-              f"F1w={result['best_f1_weighted']:.4f}, "
-              f"F1m={result['best_f1_macro']:.4f}, "
-              f"Params={result['num_parameters']:,}, "
-              f"Time={elapsed:.1f}s")
+        print(
+            f"\n  Best: Acc={result['best_accuracy']:.4f}, "
+            f"F1w={result['best_f1_weighted']:.4f}, "
+            f"F1m={result['best_f1_macro']:.4f}, "
+            f"Params={result['num_parameters']:,}, "
+            f"Time={elapsed:.1f}s"
+        )
     return result
+
+
 def save_results(results: dict, filename: str):
     filepath = os.path.join(RESULTS_DIR, filename)
+
     def convert(obj):
         if isinstance(obj, np.integer):
             return int(obj)
@@ -175,13 +209,18 @@ def save_results(results: dict, filename: str):
         elif isinstance(obj, list):
             return [convert(v) for v in obj]
         return obj
+
     with open(filepath, "w") as f:
         json.dump(convert(results), f, indent=2)
     print(f"Results saved to {filepath}")
+
+
 def load_results(filename: str) -> dict:
     filepath = os.path.join(RESULTS_DIR, filename)
     with open(filepath, "r") as f:
         return json.load(f)
+
+
 def print_results_table(results_list: list, title: str = "Results"):
     try:
         from tabulate import tabulate
@@ -190,24 +229,27 @@ def print_results_table(results_list: list, title: str = "Results"):
         print(title)
         print(f"{'='*70}")
         for r in results_list:
-            print(f"  {r['model_name']:25s} | "
-                  f"Acc: {r['best_accuracy']:.4f} | "
-                  f"F1w: {r['best_f1_weighted']:.4f} | "
-                  f"F1m: {r['best_f1_macro']:.4f} | "
-                  f"Params: {r['num_parameters']:>10,}")
+            print(
+                f"  {r['model_name']:25s} | "
+                f"Acc: {r['best_accuracy']:.4f} | "
+                f"F1w: {r['best_f1_weighted']:.4f} | "
+                f"F1m: {r['best_f1_macro']:.4f} | "
+                f"Params: {r['num_parameters']:>10,}"
+            )
         return
-    headers = ["Model", "Accuracy", "F1 (Weighted)", "F1 (Macro)", "Params",
-               "Time (s)"]
+    headers = ["Model", "Accuracy", "F1 (Weighted)", "F1 (Macro)", "Params", "Time (s)"]
     rows = []
     for r in results_list:
-        rows.append([
-            r["model_name"],
-            f"{r['best_accuracy']:.4f}",
-            f"{r['best_f1_weighted']:.4f}",
-            f"{r['best_f1_macro']:.4f}",
-            f"{r['num_parameters']:,}",
-            f"{r.get('training_time_sec', 0):.1f}",
-        ])
+        rows.append(
+            [
+                r["model_name"],
+                f"{r['best_accuracy']:.4f}",
+                f"{r['best_f1_weighted']:.4f}",
+                f"{r['best_f1_macro']:.4f}",
+                f"{r['num_parameters']:,}",
+                f"{r.get('training_time_sec', 0):.1f}",
+            ]
+        )
     print(f"\n{'='*70}")
     print(f"  {title}")
     print(f"{'='*70}")

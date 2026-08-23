@@ -4,30 +4,54 @@ import torch
 from torch.utils.data import TensorDataset
 from sklearn.model_selection import StratifiedKFold
 from config import DATA_DIR, PAMAP2_CONFIG
+
 ACTIVITY_MAP = {
-    1: 0,   
-    2: 1,   
-    3: 2,   
-    4: 3,   
-    5: 4,   
-    6: 5,   
-    7: 6,   
-    12: 7,  
-    13: 8,  
-    16: 9,  
-    17: 10, 
-    24: 11, 
+    1: 0,
+    2: 1,
+    3: 2,
+    4: 3,
+    5: 4,
+    6: 5,
+    7: 6,
+    12: 7,
+    13: 8,
+    16: 9,
+    17: 10,
+    24: 11,
 }
 SENSOR_COLS = [
-    4, 5, 6, 10, 11, 12,    
-    21, 22, 23, 27, 28, 29,  
-    38, 39, 40, 44, 45, 46,  
+    4,
+    5,
+    6,
+    10,
+    11,
+    12,
+    21,
+    22,
+    23,
+    27,
+    28,
+    29,
+    38,
+    39,
+    40,
+    44,
+    45,
+    46,
 ]
 SUBJECT_FILES = [
-    "subject101.dat", "subject102.dat", "subject103.dat",
-    "subject104.dat", "subject105.dat", "subject106.dat",
-    "subject107.dat", "subject108.dat", "subject109.dat",
+    "subject101.dat",
+    "subject102.dat",
+    "subject103.dat",
+    "subject104.dat",
+    "subject105.dat",
+    "subject106.dat",
+    "subject107.dat",
+    "subject108.dat",
+    "subject109.dat",
 ]
+
+
 def _sliding_window(data, labels, window_size, overlap):
     step = int(window_size * (1 - overlap))
     windows = []
@@ -43,6 +67,8 @@ def _sliding_window(data, labels, window_size, overlap):
     if len(windows) == 0:
         return np.empty((0, window_size, data.shape[1])), np.empty(0, dtype=int)
     return np.array(windows, dtype=np.float32), np.array(window_labels, dtype=int)
+
+
 def _load_subject(filepath):
     data = np.loadtxt(filepath)
     raw_labels = data[:, 1].astype(int)
@@ -70,6 +96,8 @@ def _load_subject(filepath):
                         else:
                             sensor_data[i, col] = 0.0
     return sensor_data, labels
+
+
 def load_pamap2():
     dataset_dir = os.path.join(DATA_DIR, "pamap2")
     possible_paths = [
@@ -114,8 +142,9 @@ def load_pamap2():
         X[:, c, :] = (X[:, c, :] - mean) / std
     print(f"  Total: {X.shape}, Classes: {len(np.unique(y))}")
     return X, y, subject_ids, cfg
-def get_pamap2_fold(X, y, subject_ids, fold: int, n_folds: int = 5,
-                    seed: int = 42):
+
+
+def get_pamap2_fold(X, y, subject_ids, fold: int, n_folds: int = 5, seed: int = 42):
     skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=seed)
     splits = list(skf.split(X, y))
     train_idx, test_idx = splits[fold]
