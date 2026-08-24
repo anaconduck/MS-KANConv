@@ -22,25 +22,21 @@ class BSplineBasis(nn.Module):
         self.register_buffer("grid", grid)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x_shape = x.shape
-        x = x.reshape(-1)
         grid = self.grid
+        x_expanded = x.unsqueeze(-1)
         bases = (
-            (x.unsqueeze(-1) >= grid[:-1].unsqueeze(0))
-            & (x.unsqueeze(-1) < grid[1:].unsqueeze(0))
-        ).float()
+            (x_expanded >= grid[:-1]) & (x_expanded < grid[1:])
+        ).to(x.dtype)
         for k in range(1, self.spline_order + 1):
-            left_num = x.unsqueeze(-1) - grid[: -(k + 1)].unsqueeze(0)
-            left_den = grid[k:-1] - grid[: -(k + 1)]
-            left_den = left_den.unsqueeze(0).clamp(min=1e-8)
-            right_num = grid[k + 1 :].unsqueeze(0) - x.unsqueeze(-1)
-            right_den = grid[k + 1 :] - grid[1:-k]
-            right_den = right_den.unsqueeze(0).clamp(min=1e-8)
+            left_num = x_expanded - grid[: -(k + 1)]
+            left_den = (grid[k:-1] - grid[: -(k + 1)]).clamp(min=1e-8)
+            right_num = grid[k + 1 :] - x_expanded
+            right_den = (grid[k + 1 :] - grid[1:-k]).clamp(min=1e-8)
             bases = (
-                left_num / left_den * bases[:, :-1]
-                + right_num / right_den * bases[:, 1:]
+                (left_num / left_den) * bases[..., :-1]
+                + (right_num / right_den) * bases[..., 1:]
             )
-        return bases.reshape(*x_shape, -1)
+        return bases
 
 
 class KANActivation(nn.Module):
