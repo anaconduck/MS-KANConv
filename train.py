@@ -120,11 +120,11 @@ def train_model(
         num_workers=config.num_workers,
         pin_memory=True,
     )
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(
+    criterion = nn.CrossEntropyLoss(label_smoothing=0.05)
+    optimizer = optim.AdamW(
         model.parameters(),
         lr=config.learning_rate,
-        weight_decay=1e-4,
+        weight_decay=getattr(config, "weight_decay", 1e-4),
     )
     if config.scheduler == "cosine":
         scheduler = optim.lr_scheduler.CosineAnnealingLR(

@@ -40,7 +40,7 @@ class BSplineBasis(nn.Module):
 
 
 class KANActivation(nn.Module):
-    def __init__(self, num_channels: int, grid_size: int = 5, spline_order: int = 3):
+    def __init__(self, num_channels: int, grid_size: int = 8, spline_order: int = 3):
         super().__init__()
         self.num_channels = num_channels
         self.grid_size = grid_size
@@ -51,13 +51,14 @@ class KANActivation(nn.Module):
             torch.randn(num_channels, self.num_basis) * 0.1
         )
         self.base_weight = nn.Parameter(torch.ones(num_channels) * 1.0)
-        self.spline_scale = nn.Parameter(torch.ones(num_channels) * 0.1)
+        self.spline_scale = nn.Parameter(torch.ones(num_channels) * 0.2)
+        self.input_scale = nn.Parameter(torch.ones(num_channels) * 1.0)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         B, C, T = x.shape
         assert C == self.num_channels, f"Expected {self.num_channels} channels, got {C}"
         base = F.silu(x) * self.base_weight.view(1, C, 1)
-        x_norm = torch.tanh(x)
+        x_norm = torch.tanh(x * self.input_scale.view(1, C, 1))
         basis = self.bspline(x_norm)
         spline_out = (basis * self.spline_weight.unsqueeze(0).unsqueeze(2)).sum(-1)
         spline_out = spline_out * self.spline_scale.view(1, C, 1)

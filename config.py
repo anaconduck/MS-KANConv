@@ -101,10 +101,10 @@ class MSKANConvConfig:
     block1_out_channels: int = 192
     block2_out_channels: int = 384
     block2_branch_out: int = 128
-    kan_grid_size: int = 5
+    kan_grid_size: int = 8
     kan_spline_order: int = 3
     se_reduction: int = 4
-    head_hidden_dim: int = 128
+    head_hidden_dim: int = 256
     dropout: float = 0.2
     weight_decay: float = 1e-4
 
@@ -113,8 +113,8 @@ class MSKANConvConfig:
 class TrainingConfig:
     batch_size: int = 64
     learning_rate: float = 1e-3
-    epochs: int = 100
-    patience: int = 15
+    epochs: int = 150
+    patience: int = 25
     scheduler: str = "cosine"
     step_size: int = 30
     step_gamma: float = 0.5
