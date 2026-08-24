@@ -92,7 +92,7 @@ def run_ablation():
         results = run_ablation_single_dataset(dataset_name, device)
         all_results[dataset_name] = results
         print_results_table(results, title=f"Ablation — {dataset_name}")
-    save_results(all_results, "exp2_ablation_results.json")
+    save_results(all_results, "ablation_results.json")
     return all_results
 
 

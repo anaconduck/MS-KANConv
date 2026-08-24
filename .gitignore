@@ -17,9 +17,7 @@ venv.bak/
 data/
 results/
 *.json
-!exp*_ablation_results.json
-!exp*_benchmark_results.json
-!exp*_efficiency_results.json
+!*_results.json
 
 # IDEs
 .idea/

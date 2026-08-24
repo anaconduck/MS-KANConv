@@ -103,7 +103,7 @@ def run_benchmark():
         results = run_benchmark_single_dataset(dataset_name, device)
         all_results[dataset_name] = results
         print_results_table(results, title=f"Benchmark Results — {dataset_name}")
-    save_results(all_results, "exp1_benchmark_results.json")
+    save_results(all_results, "benchmark_results.json")
     print(f"\n{'#'*70}")
     print(f"# COMBINED SUMMARY")
     print(f"{'#'*70}")

@@ -115,7 +115,7 @@ def run_efficiency():
                 ]
             )
         print(f"\n{tabulate(rows, headers=headers, tablefmt='grid')}")
-    save_results(all_results, "exp3_efficiency_results.json")
+    save_results(all_results, "efficiency_results.json")
     return all_results
 
 
