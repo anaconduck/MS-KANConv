@@ -4,35 +4,6 @@ This repository contains the official PyTorch implementation of **MS-KANConv** f
 
 ---
 
-## 📁 Project Structure
-
-```text
-Adapative_HAR/
-├── config.py                 # Central hyperparameters, paths, and dataset configs
-├── train.py                  # Training pipeline with early stopping & metrics
-├── run_all.py                # Master execution pipeline
-├── smoke_test.py             # Integrity & gradient flow verification script
-├── requirements.txt          # Python dependencies
-├── models/
-│   ├── kan_modules.py        # B-spline basis, KAN-Activation, KAN-Linear, SE-Attention
-│   ├── ms_kanconv.py         # MS-KANConv architecture & ablation factory
-│   └── baselines.py          # 6 Baselines (CNN-1D, DeepConvLSTM, TCN, TCN-Attn, Transformer, KAN-HAR)
-├── datasets/
-│   ├── download.py           # Automated dataset downloader (UCI ML repository)
-│   ├── uci_har.py            # UCI-HAR loader (9 inertial channels)
-│   ├── pamap2.py             # PAMAP2 loader (18 IMU channels, sliding window, 5-fold CV)
-│   └── mhealth.py            # mHealth loader (21 IMU channels, sliding window, 5-fold CV)
-├── experiments/
-│   ├── benchmark.py          # Exp 1: Benchmark comparison against 6 baselines
-│   ├── ablation.py           # Exp 2: Ablation study on individual components
-│   ├── efficiency.py         # Exp 3: Parameters, FLOPs, GPU/CPU latency
-│   └── interpret.py          # Exp 4: KAN activation curves & channel attention maps
-└── notebooks/
-    └── eda_and_preprocessing.ipynb # Interactive EDA, signal waveforms, and data pipeline
-```
-
----
-
 ## 🚀 Step-by-Step Execution Guide (Server / GPU Setup)
 
 Follow these detailed steps to set up the environment and run the complete experimental pipeline on your machine or server.
