@@ -9,10 +9,13 @@ from torch.utils.data import DataLoader, TensorDataset
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
+    precision_score,
+    recall_score,
     classification_report,
     confusion_matrix,
 )
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 from config import TRAIN_CONFIG, RESULTS_DIR
 
 
@@ -80,11 +83,21 @@ def evaluate(model, dataloader, criterion, device):
     acc = accuracy_score(all_labels, all_preds)
     f1_w = f1_score(all_labels, all_preds, average="weighted", zero_division=0)
     f1_m = f1_score(all_labels, all_preds, average="macro", zero_division=0)
+    prec_w = precision_score(all_labels, all_preds, average="weighted", zero_division=0)
+    prec_m = precision_score(all_labels, all_preds, average="macro", zero_division=0)
+    rec_w = recall_score(all_labels, all_preds, average="weighted", zero_division=0)
+    rec_m = recall_score(all_labels, all_preds, average="macro", zero_division=0)
+    cm = confusion_matrix(all_labels, all_preds)
     return {
         "loss": avg_loss,
         "accuracy": acc,
         "f1_weighted": f1_w,
         "f1_macro": f1_m,
+        "precision_weighted": prec_w,
+        "precision_macro": prec_m,
+        "recall_weighted": rec_w,
+        "recall_macro": rec_m,
+        "confusion_matrix": cm,
         "predictions": np.array(all_preds),
         "labels": np.array(all_labels),
     }
@@ -167,17 +180,68 @@ def train_model(
             patience_counter = 0
         else:
             patience_counter += 1
-            if patience_counter >= config.patience:
+            if patience_counter == config.patience:
                 if verbose:
-                    print(f"\n  Early stopping at epoch {epoch}")
-                break
+                    print(f"\n  Early stopping condition met at epoch {epoch} (but continuing to {config.epochs} epochs)")
     elapsed = time.time() - start_time
+
+    # --- Plotting Curves and Confusion Matrix ---
+    plots_dir = os.path.join(RESULTS_DIR, "plots")
+    os.makedirs(plots_dir, exist_ok=True)
+    
+    # 1. Plot Kurva Loss & Accuracy
+    plt.figure(figsize=(12, 5))
+    plt.subplot(1, 2, 1)
+    plt.plot(history['train_loss'], label='Train Loss')
+    plt.plot(history['test_loss'], label='Test Loss')
+    plt.title(f'{model_name} - {dataset_name}\nLoss Curve')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    
+    plt.subplot(1, 2, 2)
+    plt.plot(history['train_acc'], label='Train Acc')
+    plt.plot(history['test_acc'], label='Test Acc')
+    plt.title(f'{model_name} - {dataset_name}\nAccuracy Curve')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    
+    curve_path = os.path.join(plots_dir, f"{model_name}_{dataset_name}_curves.png")
+    plt.tight_layout()
+    plt.savefig(curve_path)
+    plt.close()
+    
+    # 2. Plot Confusion Matrix
+    cm = best_test_results['confusion_matrix']
+    plt.figure(figsize=(8, 6))
+    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    plt.title(f'{model_name} - {dataset_name} Confusion Matrix')
+    plt.colorbar()
+    thresh = cm.max() / 2.
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            plt.text(j, i, format(cm[i, j], 'd'),
+                     ha="center", va="center",
+                     color="white" if cm[i, j] > thresh else "black")
+    plt.xlabel('Predicted Label')
+    plt.ylabel('True Label')
+    cm_path = os.path.join(plots_dir, f"{model_name}_{dataset_name}_cm.png")
+    plt.tight_layout()
+    plt.savefig(cm_path)
+    plt.close()
+    # --------------------------------------------
+
     result = {
         "model_name": model_name,
         "dataset_name": dataset_name,
         "best_accuracy": best_test_results["accuracy"],
         "best_f1_weighted": best_test_results["f1_weighted"],
         "best_f1_macro": best_test_results["f1_macro"],
+        "best_precision_weighted": best_test_results["precision_weighted"],
+        "best_precision_macro": best_test_results["precision_macro"],
+        "best_recall_weighted": best_test_results["recall_weighted"],
+        "best_recall_macro": best_test_results["recall_macro"],
         "total_epochs": epoch,
         "training_time_sec": elapsed,
         "num_parameters": count_parameters(model),
