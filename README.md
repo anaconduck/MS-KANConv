@@ -36,22 +36,7 @@ pip install -r requirements.txt
 
 ---
 
-### Step 3: Verify GPU & Run Smoke Test
-
-Before running long training jobs, verify that PyTorch detects your GPU and all model components pass shape and gradient checks:
-
-```bash
-# Check GPU recognition
-python -c "import torch; print('CUDA Available:', torch.cuda.is_available(), '| Device:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"
-
-# Run component & gradient flow smoke test
-python smoke_test.py
-```
-*(Ensure that `✓ ALL TESTS PASSED!` is displayed).*
-
----
-
-### Step 4: Download Datasets Automatically
+### Step 3: Download Datasets Automatically
 
 Download and extract the three benchmark datasets (UCI-HAR, PAMAP2, and mHealth) directly from the official UCI Machine Learning Repository:
 
@@ -62,7 +47,7 @@ python run_all.py --download
 
 ---
 
-### Step 5: Execute Experiments
+### Step 4: Execute Experiments
 
 You can either run the entire experimental pipeline automatically or run specific stages individually.
 
@@ -86,18 +71,3 @@ python run_all.py --run efficiency
 # 4. Generate Interpretability Figures (B-Spline curves & Attention heatmaps)
 python run_all.py --run interpret
 ```
-
----
-
-### Step 6: Inspect Results & Figures
-
-After completion, all evaluation metrics and publication-ready figures are stored in the `results/` folder:
-
-* **Quantitative Tables (JSON):**
-  * `results/benchmark_results.json` — Accuracy, Weighted F1, Macro F1 across models.
-  * `results/ablation_results.json` — Component contribution results.
-  * `results/efficiency_results.json` — Parameter counts, FLOPs, and GPU/CPU inference latency.
-* **Publication Figures (PNG, 300 DPI):**
-  * `results/figures/architecture_diagram.png` — Architectural schematic.
-  * `results/figures/kan_activations_*.png` — Learned B-spline non-linear activation curves per channel.
-  * `results/figures/channel_attention_*.png` — Sensor channel attention weights per activity class.
