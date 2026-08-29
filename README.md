@@ -24,13 +24,9 @@ conda activate har_env
 
 ### Step 2: Install PyTorch with CUDA & Dependencies
 
-Install PyTorch with CUDA acceleration (for NVIDIA GPUs such as RTX 5070 / 4090 / 3090) followed by the required packages:
+Install PyTorch with CUDA acceleration (for NVIDIA GPUs) followed by the required packages:
 
 ```bash
-# 1. Install PyTorch with CUDA 12.1 support
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-
-# 2. Install all required dependencies
 pip install -r requirements.txt
 ```
 
