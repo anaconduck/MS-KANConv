@@ -86,10 +86,28 @@ MHEALTH_CONFIG = DatasetConfig(
         "Jump Front & Back",
     ],
 )
+WISDM_CONFIG = DatasetConfig(
+    name="WISDM",
+    num_classes=6,
+    input_channels=3,
+    sampling_rate=20,
+    window_size=128,
+    overlap=0.5,
+    n_folds=5,
+    activity_labels=[
+        "Walking",
+        "Jogging",
+        "Upstairs",
+        "Downstairs",
+        "Sitting",
+        "Standing",
+    ],
+)
 DATASET_CONFIGS = {
     "uci_har": UCI_HAR_CONFIG,
     "pamap2": PAMAP2_CONFIG,
     "mhealth": MHEALTH_CONFIG,
+    "wisdm": WISDM_CONFIG,
 }
 
 

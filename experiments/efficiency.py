@@ -52,7 +52,7 @@ def run_efficiency():
     device = get_device()
     set_seed(TRAIN_CONFIG.seed)
     all_models = BASELINE_MODELS + ["ms_kanconv"]
-    datasets_to_test = ["uci_har", "pamap2", "mhealth"]
+    datasets_to_test = ["uci_har", "pamap2", "mhealth", "wisdm"]
     all_results = {}
     for dataset_name in datasets_to_test:
         cfg = DATASET_CONFIGS[dataset_name]

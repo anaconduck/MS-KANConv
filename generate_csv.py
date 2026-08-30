@@ -136,8 +136,48 @@ def convert_mhealth():
         full_df.to_csv(out_path, index=False)
         print(f"Berhasil menyimpan {out_path}")
 
+def convert_wisdm():
+    print("Memproses WISDM...")
+    dataset_dir = os.path.join(DATA_DIR, "wisdm")
+    possible_paths = [
+        os.path.join(dataset_dir, "WISDM_ar_v1.1", "WISDM_ar_v1.1_raw.txt"),
+        os.path.join(dataset_dir, "WISDM_ar_v1.1_raw.txt"),
+    ]
+    filepath = None
+    for p in possible_paths:
+        if os.path.exists(p):
+            filepath = p
+            break
+            
+    if filepath is None:
+        print("WISDM tidak ditemukan! Pastikan file WISDM_ar_v1.1_raw.txt ada di data/wisdm/")
+        return
+        
+    cols = ["user", "activity", "timestamp", "x", "y", "z"]
+    
+    # Membaca data WISDM, mengabaikan baris error dan menghapus semicolon di akhir baris Z
+    try:
+        df = pd.read_csv(filepath, header=None, names=cols, on_bad_lines='skip', lineterminator='\\n')
+    except TypeError:
+        # For older pandas versions
+        df = pd.read_csv(filepath, header=None, names=cols, error_bad_lines=False, lineterminator='\\n')
+        
+    df['z'] = df['z'].astype(str).str.replace(';', '').astype(float, errors='ignore')
+    
+    # Hapus baris dengan nilai NaN
+    df = df.dropna()
+    
+    # Ubah z menjadi numerik setelah menghapus ';'
+    df['z'] = pd.to_numeric(df['z'], errors='coerce')
+    df = df.dropna()
+    
+    out_path = os.path.join(DATA_DIR, "csv", "wisdm_raw.csv")
+    df.to_csv(out_path, index=False)
+    print(f"Berhasil menyimpan {out_path}")
+
 if __name__ == "__main__":
     os.makedirs(os.path.join(DATA_DIR, "csv"), exist_ok=True)
     convert_uci_har()
     convert_pamap2()
     convert_mhealth()
+    convert_wisdm()

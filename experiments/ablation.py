@@ -17,6 +17,7 @@ from train import (
 from datasets.uci_har import load_uci_har
 from datasets.pamap2 import load_pamap2, get_pamap2_fold
 from datasets.mhealth import load_mhealth, get_mhealth_fold
+from datasets.wisdm import load_wisdm, get_wisdm_fold
 
 
 def run_ablation_single_dataset(dataset_name: str, device=None):
@@ -32,6 +33,9 @@ def run_ablation_single_dataset(dataset_name: str, device=None):
     elif dataset_name == "mhealth":
         X, y, subj, cfg = load_mhealth()
         folds = [get_mhealth_fold(X, y, subj, 0, cfg.n_folds, TRAIN_CONFIG.seed)]
+    elif dataset_name == "wisdm":
+        X, y, subj, cfg = load_wisdm()
+        folds = [get_wisdm_fold(X, y, subj, 0, cfg.n_folds, TRAIN_CONFIG.seed)]
     else:
         raise ValueError(f"Unknown dataset: {dataset_name}")
     results = []
@@ -86,7 +90,7 @@ def run_ablation_single_dataset(dataset_name: str, device=None):
 def run_ablation():
     device = get_device()
     all_results = {}
-    for dataset_name in ["uci_har", "pamap2", "mhealth"]:
+    for dataset_name in ["uci_har", "pamap2", "mhealth", "wisdm"]:
         print(f"\n{'#'*70}")
         print(f"# ABLATION: {dataset_name}")
         print(f"{'#'*70}")

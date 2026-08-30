@@ -17,6 +17,7 @@ from train import (
 from datasets.uci_har import load_uci_har
 from datasets.pamap2 import load_pamap2, get_pamap2_fold
 from datasets.mhealth import load_mhealth, get_mhealth_fold
+from datasets.wisdm import load_wisdm, get_wisdm_fold
 
 
 def run_benchmark_single_dataset(dataset_name: str, device=None):
@@ -36,6 +37,12 @@ def run_benchmark_single_dataset(dataset_name: str, device=None):
         X, y, subj, cfg = load_mhealth()
         folds = [
             get_mhealth_fold(X, y, subj, f, cfg.n_folds, TRAIN_CONFIG.seed)
+            for f in range(cfg.n_folds)
+        ]
+    elif dataset_name == "wisdm":
+        X, y, subj, cfg = load_wisdm()
+        folds = [
+            get_wisdm_fold(X, y, subj, f, cfg.n_folds, TRAIN_CONFIG.seed)
             for f in range(cfg.n_folds)
         ]
     else:
@@ -97,7 +104,7 @@ def run_benchmark_single_dataset(dataset_name: str, device=None):
 def run_benchmark():
     device = get_device()
     all_results = {}
-    for dataset_name in ["uci_har", "pamap2", "mhealth"]:
+    for dataset_name in ["uci_har", "pamap2", "mhealth", "wisdm"]:
         print(f"\n{'#'*70}")
         print(f"# DATASET: {dataset_name}")
         print(f"{'#'*70}")
