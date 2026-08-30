@@ -61,6 +61,7 @@ def run_ablation_single_dataset(dataset_name: str, device=None):
                 test_ds,
                 model_name=variant,
                 dataset_name=dataset_name,
+                fold=fold_idx + 1,
                 device=device,
                 verbose=True,
             )

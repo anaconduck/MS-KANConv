@@ -110,6 +110,7 @@ def train_model(
     config=None,
     model_name="model",
     dataset_name="dataset",
+    fold=1,
     device=None,
     verbose=True,
 ):
@@ -151,8 +152,27 @@ def train_model(
     best_test_results = None
     patience_counter = 0
     history = {"train_loss": [], "train_acc": [], "test_loss": [], "test_acc": []}
+    start_epoch = 1
+
+    ckpt_dir = os.path.join(RESULTS_DIR, "checkpoints")
+    os.makedirs(ckpt_dir, exist_ok=True)
+    ckpt_path = os.path.join(ckpt_dir, f"ckpt_{model_name}_{dataset_name}_fold{fold}.pth")
+
+    if os.path.exists(ckpt_path):
+        if verbose:
+            print(f"\n  [Auto-Resume] Checkpoint found. Resuming from {ckpt_path}...")
+        checkpoint = torch.load(ckpt_path, map_location=device)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+        start_epoch = checkpoint["epoch"] + 1
+        best_test_acc = checkpoint["best_test_acc"]
+        best_test_results = checkpoint["best_test_results"]
+        history = checkpoint["history"]
+        patience_counter = checkpoint.get("patience_counter", 0)
+
     start_time = time.time()
-    iterator = range(1, config.epochs + 1)
+    iterator = range(start_epoch, config.epochs + 1)
     if verbose:
         iterator = tqdm(iterator, desc=f"{model_name}/{dataset_name}")
     for epoch in iterator:
@@ -183,6 +203,23 @@ def train_model(
             if patience_counter == config.patience:
                 if verbose:
                     print(f"\n  Early stopping condition met at epoch {epoch} (but continuing to {config.epochs} epochs)")
+                    
+        torch.save({
+            "epoch": epoch,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "scheduler_state_dict": scheduler.state_dict(),
+            "best_test_acc": best_test_acc,
+            "best_test_results": best_test_results,
+            "history": history,
+            "patience_counter": patience_counter,
+        }, ckpt_path)
+
+    if os.path.exists(ckpt_path):
+        os.remove(ckpt_path)
+        if verbose:
+            print(f"\n  [Cleanup] Checkpoint removed after successful training.")
+            
     elapsed = time.time() - start_time
 
     # --- Plotting Curves and Confusion Matrix ---

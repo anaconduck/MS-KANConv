@@ -70,6 +70,7 @@ def run_benchmark_single_dataset(dataset_name: str, device=None):
                 test_ds,
                 model_name=model_name,
                 dataset_name=dataset_name,
+                fold=fold_idx + 1,
                 device=device,
                 verbose=True,
             )
