@@ -141,8 +141,15 @@ def train_model(
         weight_decay=getattr(config, "weight_decay", 1e-4),
     )
     if config.scheduler == "cosine":
-        scheduler = optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, T_max=config.epochs, eta_min=1e-6
+        warmup_epochs = min(5, max(1, config.epochs // 10))
+        warmup_scheduler = optim.lr_scheduler.LinearLR(
+            optimizer, start_factor=0.01, end_factor=1.0, total_iters=warmup_epochs
+        )
+        cosine_scheduler = optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=config.epochs - warmup_epochs, eta_min=1e-6
+        )
+        scheduler = optim.lr_scheduler.SequentialLR(
+            optimizer, schedulers=[warmup_scheduler, cosine_scheduler], milestones=[warmup_epochs]
         )
     else:
         scheduler = optim.lr_scheduler.StepLR(

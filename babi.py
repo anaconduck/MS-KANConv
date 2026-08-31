@@ -198,7 +198,7 @@ def build_ms_kanconv(
     input_channels: int, num_classes: int, variant: str = "full", **kwargs
 ):
     defaults = dict(
-        branch_out_channels_1=32,
+        branch_out_channels_1=64,
         branch_out_channels_2=64,
         kernel_sizes=(3, 5, 7),
         dilations=(1, 2, 4),
@@ -206,7 +206,7 @@ def build_ms_kanconv(
         se_reduction=4,
         kan_grid_size=5,
         kan_spline_order=3,
-        head_hidden_dim=64,
+        head_hidden_dim=128,
         use_kan_act=True,
         use_multiscale=True,
         use_kan_head=True,
