@@ -8,14 +8,37 @@ from sklearn.preprocessing import StandardScaler
 
 def load_wisdm():
     cfg = DATASET_CONFIGS["wisdm"]
-    filepath = os.path.join(DATA_DIR, "csv", "wisdm_raw.csv")
     
-    if not os.path.exists(filepath):
+    # Mencari lokasi file .txt asli
+    dataset_dir = os.path.join(DATA_DIR, "wisdm")
+    possible_paths = [
+        os.path.join(dataset_dir, "WISDM_ar_v1.1", "WISDM_ar_v1.1_raw.txt"),
+        os.path.join(dataset_dir, "WISDM_ar_v1.1_raw.txt"),
+    ]
+    
+    filepath = None
+    for p in possible_paths:
+        if os.path.exists(p):
+            filepath = p
+            break
+            
+    if filepath is None:
         raise FileNotFoundError(
-            f"File {filepath} tidak ditemukan. Silakan jalankan generate_csv.py terlebih dahulu dengan data mentah WISDM di folder data/wisdm/."
+            "File WISDM_ar_v1.1_raw.txt tidak ditemukan. Pastikan Anda sudah mengekstrak data WISDM ke folder data/wisdm/."
         )
         
-    df = pd.read_csv(filepath)
+    cols = ["user", "activity", "timestamp", "x", "y", "z"]
+    
+    # Membaca data langsung dari .txt mentah
+    try:
+        df = pd.read_csv(filepath, header=None, names=cols, on_bad_lines='skip', lineterminator='\n')
+    except TypeError:
+        df = pd.read_csv(filepath, header=None, names=cols, error_bad_lines=False, lineterminator='\n')
+        
+    # Membersihkan titik koma (;) pada kolom Z
+    df['z'] = df['z'].astype(str).str.replace(';', '').astype(float, errors='ignore')
+    df['z'] = pd.to_numeric(df['z'], errors='coerce')
+    df = df.dropna()
     
     # Mapping label to integer 0-5
     # WISDM labels: "Walking", "Jogging", "Upstairs", "Downstairs", "Sitting", "Standing"

@@ -19,7 +19,7 @@ def download_datasets():
 def execute_benchmark():
     print("\n" + "=" * 70)
     print("BENCHMARK COMPARISON")
-    print("MS-KANConv vs 6 baselines on UCI-HAR, PAMAP2, mHealth")
+    print("MS-KANConv vs 6 baselines on UCI-HAR, PAMAP2, mHealth, WISDM")
     print("=" * 70)
     from experiments.benchmark import run_benchmark
 
