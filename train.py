@@ -172,6 +172,7 @@ def train_model(
         patience_counter = checkpoint.get("patience_counter", 0)
 
     start_time = time.time()
+    epoch = start_epoch - 1
     iterator = range(start_epoch, config.epochs + 1)
     if verbose:
         iterator = tqdm(iterator, desc=f"{model_name}/{dataset_name}")
@@ -215,10 +216,7 @@ def train_model(
             "patience_counter": patience_counter,
         }, ckpt_path)
 
-    if os.path.exists(ckpt_path):
-        os.remove(ckpt_path)
-        if verbose:
-            print(f"\n  [Cleanup] Checkpoint removed after successful training.")
+    # Checkpoint dipertahankan agar tidak mengulang dari awal jika script dijalankan ulang
             
     elapsed = time.time() - start_time
 
