@@ -131,7 +131,7 @@ class MSKANConvConfig:
 class TrainingConfig:
     batch_size: int = 64
     learning_rate: float = 1e-3
-    epochs: int = 150
+    epochs: int = 100
     patience: int = 25
     scheduler: str = "cosine"
     step_size: int = 30

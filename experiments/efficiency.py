@@ -79,17 +79,12 @@ def run_efficiency():
             mean_time_gpu, std_time_gpu = measure_inference_time(
                 model, input_shape, device
             )
-            mean_time_cpu, std_time_cpu = measure_inference_time(
-                model, input_shape, torch.device("cpu")
-            )
             result = {
                 "model_name": model_name,
                 "num_parameters": params,
                 "flops": flops,
                 "inference_gpu_ms": mean_time_gpu,
                 "inference_gpu_std": std_time_gpu,
-                "inference_cpu_ms": mean_time_cpu,
-                "inference_cpu_std": std_time_cpu,
             }
             results.append(result)
             flops_str = f"{flops/1e6:.2f}M" if flops else "N/A"
@@ -97,11 +92,10 @@ def run_efficiency():
                 f"  {model_name:25s} | "
                 f"Params: {params:>10,} | "
                 f"FLOPs: {flops_str:>10s} | "
-                f"GPU: {mean_time_gpu:.2f}±{std_time_gpu:.2f}ms | "
-                f"CPU: {mean_time_cpu:.2f}±{std_time_cpu:.2f}ms"
+                f"GPU: {mean_time_gpu:.2f}±{std_time_gpu:.2f}ms"
             )
         all_results[dataset_name] = results
-        headers = ["Model", "Parameters", "FLOPs", "GPU (ms)", "CPU (ms)"]
+        headers = ["Model", "Parameters", "FLOPs", "GPU (ms)"]
         rows = []
         for r in results:
             flops_str = f"{r['flops']/1e6:.2f}M" if r["flops"] else "N/A"
@@ -111,7 +105,6 @@ def run_efficiency():
                     f"{r['num_parameters']:,}",
                     flops_str,
                     f"{r['inference_gpu_ms']:.2f}±{r['inference_gpu_std']:.2f}",
-                    f"{r['inference_cpu_ms']:.2f}±{r['inference_cpu_std']:.2f}",
                 ]
             )
         print(f"\n{tabulate(rows, headers=headers, tablefmt='grid')}")
