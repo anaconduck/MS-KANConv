@@ -72,14 +72,14 @@ def main():
     )
     args = parser.parse_args()
     total_start = time.time()
-    print("╔" + "═" * 68 + "╗")
+    print("+" + "=" * 68 + "+")
     print(
-        "║"
+        "|"
         + " MS-KANConv: Multi-Scale KAN-augmented Convolution for HAR ".center(68)
-        + "║"
+        + "|"
     )
-    print("║" + " Complete Experimental Pipeline ".center(68) + "║")
-    print("╚" + "═" * 68 + "╝")
+    print("|" + " Complete Experimental Pipeline ".center(68) + "|")
+    print("+" + "=" * 68 + "+")
     print(f"\n  Results directory: {RESULTS_DIR}")
     print(f"  Figures directory: {FIGURES_DIR}")
 

@@ -16,6 +16,11 @@ DATASETS = {
         "url": "https://archive.ics.uci.edu/ml/machine-learning-databases/00319/MHEALTHDATASET.zip",
         "extract_dir": "MHEALTHDATASET",
     },
+    "wisdm": {
+        "url": "https://www.cis.fordham.edu/wisdm/includes/datasets/latest/WISDM_ar_latest.tar.gz",
+        "extract_dir": "WISDM_ar_v1.1",
+        "is_tar": True,
+    },
 }
 
 
@@ -35,24 +40,32 @@ def download_file(url: str, dest_path: str):
 def download_dataset(name: str, data_dir: str):
     info = DATASETS[name]
     dataset_dir = os.path.join(data_dir, name)
-    zip_path = os.path.join(data_dir, f"{name}.zip")
+    is_tar = info.get("is_tar", False)
+    ext = ".tar.gz" if is_tar else ".zip"
+    archive_path = os.path.join(data_dir, f"{name}{ext}")
+    
     if os.path.isdir(dataset_dir) and len(os.listdir(dataset_dir)) > 0:
         print(f"[{name}] Already exists at {dataset_dir}, skipping.")
         return
     os.makedirs(dataset_dir, exist_ok=True)
     print(f"\n[{name}] Downloading...")
     try:
-        download_file(info["url"], zip_path)
+        download_file(info["url"], archive_path)
     except Exception as e:
         print(f"  ⚠ Auto-download failed: {e}")
         print(f"  Please manually download from: {info['url']}")
         print(f"  Extract to: {dataset_dir}")
         return
     print(f"[{name}] Extracting...")
-    with zipfile.ZipFile(zip_path, "r") as zf:
-        zf.extractall(dataset_dir)
+    if is_tar:
+        import tarfile
+        with tarfile.open(archive_path, "r:gz") as tar:
+            tar.extractall(dataset_dir)
+    else:
+        with zipfile.ZipFile(archive_path, "r") as zf:
+            zf.extractall(dataset_dir)
     print(f"[{name}] Done! Extracted to {dataset_dir}")
-    os.remove(zip_path)
+    os.remove(archive_path)
 
 
 def download_all(data_dir: str):
