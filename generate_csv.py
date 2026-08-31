@@ -157,10 +157,10 @@ def convert_wisdm():
     
     # Membaca data WISDM, mengabaikan baris error dan menghapus semicolon di akhir baris Z
     try:
-        df = pd.read_csv(filepath, header=None, names=cols, on_bad_lines='skip', lineterminator='\\n')
+        df = pd.read_csv(filepath, header=None, names=cols, on_bad_lines='skip', lineterminator='\n')
     except TypeError:
         # For older pandas versions
-        df = pd.read_csv(filepath, header=None, names=cols, error_bad_lines=False, lineterminator='\\n')
+        df = pd.read_csv(filepath, header=None, names=cols, error_bad_lines=False, lineterminator='\n')
         
     df['z'] = df['z'].astype(str).str.replace(';', '').astype(float, errors='ignore')
     
