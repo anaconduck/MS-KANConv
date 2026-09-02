@@ -55,9 +55,9 @@ class MSKANConvBlock(nn.Module):
         kernel_sizes=(3, 7, 11),
         dilations=(1, 2, 4),
         dropout: float = 0.2,
-        se_reduction: int = 4,
+        cbam_reduction: int = 4,
         use_kan_act: bool = True,
-        use_se: bool = True,
+        use_cbam: bool = True,
         kan_grid_size: int = 5,
         kan_spline_order: int = 3,
     ):
@@ -79,9 +79,9 @@ class MSKANConvBlock(nn.Module):
                 for ks, d in zip(kernel_sizes, dilations)
             ]
         )
-        self.use_se = use_se
-        if use_se:
-            self.se = CBAM1D(total_out, se_reduction)
+        self.use_cbam = use_cbam
+        if use_cbam:
+            self.cbam = CBAM1D(total_out, cbam_reduction)
         self.layer_norm = nn.LayerNorm(total_out)
         self.residual = (
             nn.Conv1d(in_channels, total_out, 1)
@@ -94,8 +94,8 @@ class MSKANConvBlock(nn.Module):
         min_t = min(o.size(-1) for o in branch_outputs)
         branch_outputs = [o[:, :, :min_t] for o in branch_outputs]
         out = torch.cat(branch_outputs, dim=1)
-        if self.use_se:
-            out = self.se(out)
+        if self.use_cbam:
+            out = self.cbam(out)
         out = out.transpose(1, 2)
         out = self.layer_norm(out)
         out = out.transpose(1, 2)
@@ -115,14 +115,14 @@ class MSKANConv(nn.Module):
         kernel_sizes=(3, 7, 11),
         dilations=(1, 2, 4),
         dropout: float = 0.2,
-        se_reduction: int = 4,
+        cbam_reduction: int = 4,
         kan_grid_size: int = 5,
         kan_spline_order: int = 3,
         head_hidden_dim: int = 64,
         use_kan_act: bool = True,
         use_multiscale: bool = True,
         use_kan_head: bool = True,
-        use_se: bool = True,
+        use_cbam: bool = True,
     ):
         super().__init__()
         self.use_kan_head = use_kan_head
@@ -141,9 +141,9 @@ class MSKANConv(nn.Module):
             kernel_sizes=ks,
             dilations=ds,
             dropout=dropout,
-            se_reduction=se_reduction,
+            cbam_reduction=cbam_reduction,
             use_kan_act=use_kan_act,
-            use_se=use_se,
+            use_cbam=use_cbam,
             kan_grid_size=kan_grid_size,
             kan_spline_order=kan_spline_order,
         )
@@ -153,9 +153,9 @@ class MSKANConv(nn.Module):
             kernel_sizes=ks,
             dilations=ds,
             dropout=dropout,
-            se_reduction=se_reduction,
+            cbam_reduction=cbam_reduction,
             use_kan_act=use_kan_act,
-            use_se=use_se,
+            use_cbam=use_cbam,
             kan_grid_size=kan_grid_size,
             kan_spline_order=kan_spline_order,
         )
@@ -204,14 +204,14 @@ def build_ms_kanconv(
         kernel_sizes=(3, 7, 11),
         dilations=(1, 2, 4),
         dropout=0.2,
-        se_reduction=4,
+        cbam_reduction=4,
         kan_grid_size=5,
         kan_spline_order=3,
         head_hidden_dim=64,
         use_kan_act=True,
         use_multiscale=True,
         use_kan_head=True,
-        use_se=True,
+        use_cbam=True,
     )
     defaults.update(kwargs)
     if variant == "ms_kanconv_full" or variant == "ms_kanconv" or variant == "full":
@@ -222,8 +222,8 @@ def build_ms_kanconv(
         defaults["use_kan_act"] = False
     elif variant == "ms_kanconv_no_kanhead":
         defaults["use_kan_head"] = False
-    elif variant == "ms_kanconv_no_se":
-        defaults["use_se"] = False
+    elif variant == "ms_kanconv_no_cbam" or variant == "ms_kanconv_no_se":
+        defaults["use_cbam"] = False
     else:
         raise ValueError(f"Unknown variant: {variant}")
     return MSKANConv(input_channels, num_classes, **defaults)

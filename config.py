@@ -121,7 +121,7 @@ class MSKANConvConfig:
     block2_branch_out: int = 64
     kan_grid_size: int = 5
     kan_spline_order: int = 3
-    se_reduction: int = 4
+    cbam_reduction: int = 4
     head_hidden_dim: int = 64
     dropout: float = 0.2
     weight_decay: float = 1e-4
