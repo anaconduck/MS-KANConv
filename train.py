@@ -134,7 +134,7 @@ def train_model(
         num_workers=config.num_workers,
         pin_memory=True,
     )
-    criterion = nn.CrossEntropyLoss(label_smoothing=0.05)
+    criterion = nn.CrossEntropyLoss(label_smoothing=0.0)
     optimizer = optim.AdamW(
         model.parameters(),
         lr=config.learning_rate,

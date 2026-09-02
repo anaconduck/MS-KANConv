@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .kan_modules import KANActivation, KANLinear, SqueezeExcitation
+from .kan_modules import KANActivation, KANLinear, CBAM1D
 
 
 class MSKANConvBranch(nn.Module):
@@ -52,7 +52,7 @@ class MSKANConvBlock(nn.Module):
         self,
         in_channels: int,
         branch_out_channels: int,
-        kernel_sizes=(3, 5, 7),
+        kernel_sizes=(3, 7, 11),
         dilations=(1, 2, 4),
         dropout: float = 0.2,
         se_reduction: int = 4,
@@ -81,7 +81,7 @@ class MSKANConvBlock(nn.Module):
         )
         self.use_se = use_se
         if use_se:
-            self.se = SqueezeExcitation(total_out, se_reduction)
+            self.se = CBAM1D(total_out, se_reduction)
         self.layer_norm = nn.LayerNorm(total_out)
         self.residual = (
             nn.Conv1d(in_channels, total_out, 1)
@@ -112,7 +112,7 @@ class MSKANConv(nn.Module):
         num_classes: int,
         branch_out_channels_1: int = 32,
         branch_out_channels_2: int = 64,
-        kernel_sizes=(3, 5, 7),
+        kernel_sizes=(3, 7, 11),
         dilations=(1, 2, 4),
         dropout: float = 0.2,
         se_reduction: int = 4,
@@ -162,6 +162,7 @@ class MSKANConv(nn.Module):
         if use_kan_head:
             self.head = nn.Sequential(
                 KANLinear(block2_out, head_hidden_dim, kan_grid_size, kan_spline_order),
+                nn.LayerNorm(head_hidden_dim),
                 nn.Dropout(dropout),
                 KANLinear(
                     head_hidden_dim, num_classes, kan_grid_size, kan_spline_order
@@ -200,7 +201,7 @@ def build_ms_kanconv(
     defaults = dict(
         branch_out_channels_1=32,
         branch_out_channels_2=64,
-        kernel_sizes=(3, 5, 7),
+        kernel_sizes=(3, 7, 11),
         dilations=(1, 2, 4),
         dropout=0.2,
         se_reduction=4,

@@ -113,16 +113,16 @@ DATASET_CONFIGS = {
 
 @dataclass
 class MSKANConvConfig:
-    branch_kernel_sizes: Tuple[int, ...] = (3, 5, 7)
+    branch_kernel_sizes: Tuple[int, ...] = (3, 7, 11)
     branch_dilations: Tuple[int, ...] = (1, 2, 4)
-    branch_out_channels: int = 64
-    block1_out_channels: int = 192
-    block2_out_channels: int = 384
-    block2_branch_out: int = 128
-    kan_grid_size: int = 8
+    branch_out_channels: int = 32
+    block1_out_channels: int = 96
+    block2_out_channels: int = 192
+    block2_branch_out: int = 64
+    kan_grid_size: int = 5
     kan_spline_order: int = 3
     se_reduction: int = 4
-    head_hidden_dim: int = 256
+    head_hidden_dim: int = 64
     dropout: float = 0.2
     weight_decay: float = 1e-4
 

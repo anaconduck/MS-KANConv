@@ -120,3 +120,43 @@ class SqueezeExcitation(nn.Module):
         w = F.relu(self.fc1(w))
         w = torch.sigmoid(self.fc2(w))
         return x * w.unsqueeze(-1)
+
+
+class ChannelAttention1D(nn.Module):
+    def __init__(self, channels: int, reduction: int = 4):
+        super().__init__()
+        mid = max(channels // reduction, 8)
+        self.fc1 = nn.Linear(channels, mid)
+        self.fc2 = nn.Linear(mid, channels)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        avg_out = x.mean(dim=-1)
+        max_out = x.amax(dim=-1)
+        avg_out = self.fc2(F.relu(self.fc1(avg_out)))
+        max_out = self.fc2(F.relu(self.fc1(max_out)))
+        return torch.sigmoid(avg_out + max_out).unsqueeze(-1)
+
+
+class SpatialAttention1D(nn.Module):
+    def __init__(self, kernel_size: int = 7):
+        super().__init__()
+        padding = kernel_size // 2
+        self.conv = nn.Conv1d(2, 1, kernel_size, padding=padding, bias=False)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        avg_out = torch.mean(x, dim=1, keepdim=True)
+        max_out, _ = torch.max(x, dim=1, keepdim=True)
+        out = torch.cat([avg_out, max_out], dim=1)
+        return torch.sigmoid(self.conv(out))
+
+
+class CBAM1D(nn.Module):
+    def __init__(self, channels: int, reduction: int = 4, kernel_size: int = 7):
+        super().__init__()
+        self.ca = ChannelAttention1D(channels, reduction)
+        self.sa = SpatialAttention1D(kernel_size)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = x * self.ca(x)
+        x = x * self.sa(x)
+        return x
