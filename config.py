@@ -115,23 +115,23 @@ DATASET_CONFIGS = {
 class MSKANConvConfig:
     branch_kernel_sizes: Tuple[int, ...] = (3, 7, 11)
     branch_dilations: Tuple[int, ...] = (1, 2, 4)
-    branch_out_channels: int = 48
-    block1_out_channels: int = 144
-    block2_out_channels: int = 288
-    block2_branch_out: int = 96
+    branch_out_channels: int = 32
+    block1_out_channels: int = 96
+    block2_out_channels: int = 192
+    block2_branch_out: int = 64
     kan_grid_size: int = 5
     kan_spline_order: int = 3
     cbam_reduction: int = 4
-    head_hidden_dim: int = 128
-    dropout: float = 0.2
-    weight_decay: float = 1e-4
+    head_hidden_dim: int = 64
+    dropout: float = 0.4
+    weight_decay: float = 1e-3
 
 
 @dataclass
 class TrainingConfig:
     batch_size: int = 64
     learning_rate: float = 1e-3
-    epochs: int = 150
+    epochs: int = 200
     patience: int = 25
     scheduler: str = "cosine"
     step_size: int = 30

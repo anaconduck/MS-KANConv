@@ -41,7 +41,7 @@ def count_parameters(model: nn.Module) -> int:
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
-def train_one_epoch(model, dataloader, criterion, optimizer, device):
+def train_one_epoch(model, dataloader, criterion, optimizer, device, mixup_alpha=0.2):
     model.train()
     total_loss = 0.0
     all_preds = []
@@ -49,16 +49,38 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device):
     for X_batch, y_batch in dataloader:
         X_batch = X_batch.to(device)
         y_batch = y_batch.to(device)
+        
+        # --- Mixup Training Logic ---
+        if mixup_alpha > 0:
+            lam = np.random.beta(mixup_alpha, mixup_alpha)
+            index = torch.randperm(X_batch.size(0)).to(device)
+            mixed_X = lam * X_batch + (1 - lam) * X_batch[index, :]
+            y_a, y_b = y_batch, y_batch[index]
+        else:
+            mixed_X = X_batch
+            y_a, y_b = y_batch, y_batch
+            lam = 1.0
+        # ----------------------------
+
         optimizer.zero_grad()
-        outputs = model(X_batch)
-        loss = criterion(outputs, y_batch)
+        outputs = model(mixed_X)
+        
+        if mixup_alpha > 0:
+            loss = lam * criterion(outputs, y_a) + (1 - lam) * criterion(outputs, y_b)
+        else:
+            loss = criterion(outputs, y_batch)
+            
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         optimizer.step()
+        
         total_loss += loss.item() * X_batch.size(0)
         preds = outputs.argmax(dim=-1).cpu().numpy()
         all_preds.extend(preds)
-        all_labels.extend(y_batch.cpu().numpy())
+        # Note: accuracy during mixup is measured against the dominant label (y_a) for logging purposes
+        dominant_label = y_a if lam >= 0.5 else y_b
+        all_labels.extend(dominant_label.cpu().numpy())
+        
     avg_loss = total_loss / len(dataloader.dataset)
     acc = accuracy_score(all_labels, all_preds)
     return avg_loss, acc
@@ -185,7 +207,7 @@ def train_model(
         iterator = tqdm(iterator, desc=f"{model_name}/{dataset_name}")
     for epoch in iterator:
         train_loss, train_acc = train_one_epoch(
-            model, train_loader, criterion, optimizer, device
+            model, train_loader, criterion, optimizer, device, mixup_alpha=0.2
         )
         test_results = evaluate(model, test_loader, criterion, device)
         scheduler.step()
