@@ -35,10 +35,16 @@ def load_wisdm():
     except TypeError:
         df = pd.read_csv(filepath, header=None, names=cols, error_bad_lines=False, lineterminator='\n')
         
-    # Membersihkan titik koma (;) pada kolom Z
-    df['z'] = df['z'].astype(str).str.replace(';', '').astype(float, errors='ignore')
+    # Membersihkan titik koma (;) pada kolom Z dan konversi ke numerik
+    df['z'] = df['z'].astype(str).str.replace(';', '').str.strip()
     df['z'] = pd.to_numeric(df['z'], errors='coerce')
-    df = df.dropna()
+    df['x'] = pd.to_numeric(df['x'], errors='coerce')
+    df['y'] = pd.to_numeric(df['y'], errors='coerce')
+    
+    # Bersihkan kolom user agar bertipe integer murni (mencegah error str vs int)
+    df['user'] = pd.to_numeric(df['user'], errors='coerce')
+    df = df.dropna(subset=['user', 'x', 'y', 'z'])
+    df['user'] = df['user'].astype(int)
     
     # Mapping label to integer 0-5
     # WISDM labels: "Walking", "Jogging", "Upstairs", "Downstairs", "Sitting", "Standing"
@@ -55,6 +61,7 @@ def load_wisdm():
     
     # Drop rows with unmapped labels if any
     df = df.dropna(subset=['label'])
+    df['label'] = df['label'].astype(int)
     
     # Sort by user and then keep order
     df = df.sort_values(by=['user'])
