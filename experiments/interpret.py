@@ -16,6 +16,7 @@ from train import set_seed, get_device, train_model
 from datasets.uci_har import load_uci_har
 from datasets.pamap2 import load_pamap2, get_pamap2_fold
 from datasets.mhealth import load_mhealth, get_mhealth_fold
+from datasets.wisdm import load_wisdm, get_wisdm_fold
 
 
 def plot_kan_activations(model, save_path, dataset_name=""):
@@ -74,27 +75,32 @@ def plot_channel_attention(
     se_blocks = []
     for name, module in model.named_modules():
         if hasattr(module, "se") and hasattr(module.se, "fc1"):
-            se_blocks.append((name, module.se))
+            se_blocks.append((name, module.se, "se"))
+        elif hasattr(module, "cbam") and hasattr(module.cbam, "ca"):
+            se_blocks.append((name, module.cbam.ca, "cbam"))
     if not se_blocks:
-        print("No SE blocks found.")
+        print("No Attention blocks found.")
         return
     attention_weights = {}
     hooks = []
 
-    def make_hook(block_name):
+    def make_hook(block_name, block_type):
         def hook_fn(module, input, output):
-            x = input[0]
-            w = x.mean(dim=-1)
-            w = torch.relu(module.fc1(w))
-            w = torch.sigmoid(module.fc2(w))
+            if block_type == "cbam":
+                w = output.squeeze(-1)
+            else:
+                x = input[0]
+                w = x.mean(dim=-1)
+                w = torch.relu(module.fc1(w))
+                w = torch.sigmoid(module.fc2(w))
             if block_name not in attention_weights:
                 attention_weights[block_name] = []
             attention_weights[block_name].append(w.detach().cpu())
 
         return hook_fn
 
-    for block_name, se in se_blocks:
-        h = se.register_forward_hook(make_hook(block_name))
+    for block_name, block_module, b_type in se_blocks:
+        h = block_module.register_forward_hook(make_hook(block_name, b_type))
         hooks.append(h)
     loader = torch.utils.data.DataLoader(test_dataset, batch_size=64)
     all_labels = []
@@ -166,17 +172,27 @@ def run_interpretability():
             ),
         },
     }
-    for dataset_name in ["uci_har", "mhealth"]:
+    for dataset_name in ["uci_har", "pamap2", "mhealth", "wisdm"]:
         print(f"\n{'='*60}")
         print(f"Interpretability: {dataset_name}")
         print(f"{'='*60}")
         cfg = DATASET_CONFIGS[dataset_name]
         if dataset_name == "uci_har":
             train_ds, test_ds, cfg = load_uci_har()
-        else:
+        elif dataset_name == "pamap2":
+            X, y, subj, cfg = load_pamap2()
+            train_ds, test_ds = get_pamap2_fold(
+                X, y, subj, 0, cfg.n_folds, TRAIN_CONFIG.seed
+            )
+        elif dataset_name == "mhealth":
             X, y, subj, cfg = load_mhealth()
             train_ds, test_ds = get_mhealth_fold(
                 X, y, subj, 0, cfg.n_folds, TRAIN_CONFIG.seed
+            )
+        elif dataset_name == "wisdm":
+            X, y, user, cfg = load_wisdm()
+            train_ds, test_ds = get_wisdm_fold(
+                X, y, user, 0, cfg.n_folds, TRAIN_CONFIG.seed
             )
         model = MSKANConv(
             input_channels=cfg.input_channels,
