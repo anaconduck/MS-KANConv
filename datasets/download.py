@@ -21,6 +21,10 @@ DATASETS = {
         "extract_dir": "WISDM_ar_v1.1",
         "is_tar": True,
     },
+    "unimib_shar": {
+        "url": "https://www.dropbox.com/s/raw/x2fpfqj0bpf8ep6/UniMiB-SHAR.zip",
+        "extract_dir": "UniMiB-SHAR",
+    },
 }
 
 

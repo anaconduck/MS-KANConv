@@ -136,10 +136,6 @@ def load_pamap2():
     X = np.concatenate(all_X, axis=0)
     y = np.concatenate(all_y, axis=0)
     subject_ids = np.concatenate(all_subj, axis=0)
-    for c in range(X.shape[1]):
-        mean = X[:, c, :].mean()
-        std = X[:, c, :].std() + 1e-8
-        X[:, c, :] = (X[:, c, :] - mean) / std
     print(f"  Total: {X.shape}, Classes: {len(np.unique(y))}")
     return X, y, subject_ids, cfg
 
@@ -148,8 +144,17 @@ def get_pamap2_fold(X, y, subject_ids, fold: int, n_folds: int = 5, seed: int = 
     skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=seed)
     splits = list(skf.split(X, y))
     train_idx, test_idx = splits[fold]
-    X_train = torch.from_numpy(X[train_idx])
-    y_train = torch.from_numpy(y[train_idx]).long()
-    X_test = torch.from_numpy(X[test_idx])
-    y_test = torch.from_numpy(y[test_idx]).long()
-    return TensorDataset(X_train, y_train), TensorDataset(X_test, y_test)
+    X_train = X[train_idx].copy()
+    X_test = X[test_idx].copy()
+    # Normalisasi per channel: fit hanya dari train, transform train & test
+    # Mencegah data leakage dari test set ke normalisasi
+    for c in range(X_train.shape[1]):
+        mean = X_train[:, c, :].mean()
+        std = X_train[:, c, :].std() + 1e-8
+        X_train[:, c, :] = (X_train[:, c, :] - mean) / std
+        X_test[:, c, :]  = (X_test[:, c, :]  - mean) / std
+    X_train_t = torch.from_numpy(X_train)
+    y_train_t = torch.from_numpy(y[train_idx]).long()
+    X_test_t  = torch.from_numpy(X_test)
+    y_test_t  = torch.from_numpy(y[test_idx]).long()
+    return TensorDataset(X_train_t, y_train_t), TensorDataset(X_test_t, y_test_t)

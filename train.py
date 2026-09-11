@@ -14,9 +14,10 @@ from sklearn.metrics import (
     classification_report,
     confusion_matrix,
 )
+from sklearn.utils.class_weight import compute_class_weight
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-from config import TRAIN_CONFIG, RESULTS_DIR
+from config import TRAIN_CONFIG, RESULTS_DIR, DATASET_TRAIN_OVERRIDES
 
 
 def set_seed(seed: int = 42):
@@ -135,11 +136,14 @@ def train_model(
     fold=1,
     device=None,
     verbose=True,
+    mixup_alpha=None,
 ):
     if config is None:
         config = TRAIN_CONFIG
     if device is None:
         device = get_device()
+    if mixup_alpha is None:
+        mixup_alpha = DATASET_TRAIN_OVERRIDES.get(dataset_name, {}).get("mixup_alpha", 0.2)
     model = model.to(device)
     train_loader = DataLoader(
         train_dataset,
@@ -156,7 +160,24 @@ def train_model(
         num_workers=config.num_workers,
         pin_memory=True,
     )
-    criterion = nn.CrossEntropyLoss(label_smoothing=0.0)
+    # Resolve dataset-specific loss overrides
+    ds_overrides = DATASET_TRAIN_OVERRIDES.get(dataset_name, {})
+    label_smoothing = ds_overrides.get("label_smoothing", 0.0)
+    use_class_weights = ds_overrides.get("use_class_weights", False)
+    if use_class_weights:
+        # Hitung bobot kelas dari training set — fit dari train saja
+        if hasattr(train_dataset, "tensors"):
+            y_train_np = train_dataset.tensors[1].numpy()
+        else:
+            y_train_np = np.array([train_dataset[i][1].item() for i in range(len(train_dataset))])
+        classes = np.unique(y_train_np)
+        weights = compute_class_weight("balanced", classes=classes, y=y_train_np)
+        class_weights = torch.tensor(weights, dtype=torch.float32).to(device)
+        criterion = nn.CrossEntropyLoss(weight=class_weights, label_smoothing=label_smoothing)
+        if verbose:
+            print(f"  [Class-Weighted Loss] label_smoothing={label_smoothing}, weights={weights.round(3)}")
+    else:
+        criterion = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
     optimizer = optim.AdamW(
         model.parameters(),
         lr=config.learning_rate,
@@ -168,7 +189,7 @@ def train_model(
             optimizer, start_factor=0.01, end_factor=1.0, total_iters=warmup_epochs
         )
         cosine_scheduler = optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, T_max=config.epochs - warmup_epochs, eta_min=1e-6
+            optimizer, T_max=max(1, config.epochs - warmup_epochs), eta_min=1e-6
         )
         scheduler = optim.lr_scheduler.SequentialLR(
             optimizer, schedulers=[warmup_scheduler, cosine_scheduler], milestones=[warmup_epochs]
@@ -190,7 +211,7 @@ def train_model(
     if os.path.exists(ckpt_path):
         if verbose:
             print(f"\n  [Auto-Resume] Checkpoint found. Resuming from {ckpt_path}...")
-        checkpoint = torch.load(ckpt_path, map_location=device)
+        checkpoint = torch.load(ckpt_path, map_location=device, weights_only=False)
         model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
@@ -207,7 +228,7 @@ def train_model(
         iterator = tqdm(iterator, desc=f"{model_name}/{dataset_name}")
     for epoch in iterator:
         train_loss, train_acc = train_one_epoch(
-            model, train_loader, criterion, optimizer, device, mixup_alpha=0.2
+            model, train_loader, criterion, optimizer, device, mixup_alpha=mixup_alpha
         )
         test_results = evaluate(model, test_loader, criterion, device)
         scheduler.step()

@@ -87,13 +87,17 @@ def load_wisdm():
             window_data = data_values[start:end]
             window_labels = labels[start:end]
             
-            # Use mode for window label
+            # Hitung mode dan purity: buang window dengan label campuran
             unique, counts = np.unique(window_labels, return_counts=True)
+            max_count = counts.max()
             label = unique[np.argmax(counts)]
             
-            X_windows.append(window_data)
-            y_windows.append(label)
-            user_windows.append(user_id)
+            # Purity filter 80%: window dengan transisi aktivitas dibuang
+            # Membantu kelas minoritas (Sitting, Standing) tidak terkontaminasi
+            if max_count / window_size >= 0.8:
+                X_windows.append(window_data)
+                y_windows.append(label)
+                user_windows.append(user_id)
             
     X_windows = np.array(X_windows) # Shape (N, 128, 3)
     # Permute to (N, C, T) -> (N, 3, 128)

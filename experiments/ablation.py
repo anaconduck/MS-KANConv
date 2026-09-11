@@ -3,7 +3,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
-from config import TRAIN_CONFIG, ABLATION_VARIANTS
+from config import TRAIN_CONFIG, ABLATION_VARIANTS, DATASET_TRAIN_OVERRIDES, MODEL_CONFIG
 from models.ms_kanconv import build_ms_kanconv
 from models.baselines import get_baseline_model
 from train import (
@@ -18,6 +18,7 @@ from datasets.uci_har import load_uci_har
 from datasets.pamap2 import load_pamap2, get_pamap2_fold
 from datasets.mhealth import load_mhealth, get_mhealth_fold
 from datasets.wisdm import load_wisdm, get_wisdm_fold
+from datasets.unimib_shar import load_unimib_shar, get_unimib_shar_fold
 
 
 def run_ablation_single_dataset(dataset_name: str, device=None):
@@ -36,8 +37,14 @@ def run_ablation_single_dataset(dataset_name: str, device=None):
     elif dataset_name == "wisdm":
         X, y, subj, cfg = load_wisdm()
         folds = [get_wisdm_fold(X, y, subj, 0, cfg.n_folds, TRAIN_CONFIG.seed)]
+    elif dataset_name == "unimib_shar":
+        X, y, subj, cfg = load_unimib_shar()
+        folds = [get_unimib_shar_fold(X, y, subj, 0, cfg.n_folds, TRAIN_CONFIG.seed)]
     else:
         raise ValueError(f"Unknown dataset: {dataset_name}")
+    overrides = DATASET_TRAIN_OVERRIDES.get(dataset_name, {})
+    dataset_dropout = overrides.get("dropout", MODEL_CONFIG.dropout)
+    dataset_mixup = overrides.get("mixup_alpha", 0.2)
     results = []
     for variant in ABLATION_VARIANTS:
         print(f"\n{'='*60}")
@@ -51,12 +58,14 @@ def run_ablation_single_dataset(dataset_name: str, device=None):
                     "tcn_vanilla",
                     input_channels=cfg.input_channels,
                     num_classes=cfg.num_classes,
+                    dropout=dataset_dropout,
                 )
             else:
                 model = build_ms_kanconv(
                     input_channels=cfg.input_channels,
                     num_classes=cfg.num_classes,
                     variant=variant,
+                    dropout=dataset_dropout,
                 )
             print(f"  Params: {count_parameters(model):,}")
             result = train_model(
@@ -68,6 +77,7 @@ def run_ablation_single_dataset(dataset_name: str, device=None):
                 fold=fold_idx + 1,
                 device=device,
                 verbose=True,
+                mixup_alpha=dataset_mixup,
             )
             fold_results.append(result)
         avg_result = {
@@ -90,7 +100,7 @@ def run_ablation_single_dataset(dataset_name: str, device=None):
 def run_ablation():
     device = get_device()
     all_results = {}
-    for dataset_name in ["uci_har", "pamap2", "mhealth", "wisdm"]:
+    for dataset_name in ["uci_har", "pamap2", "mhealth", "wisdm", "unimib_shar"]:
         print(f"\n{'#'*70}")
         print(f"# ABLATION: {dataset_name}")
         print(f"{'#'*70}")

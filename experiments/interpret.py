@@ -9,7 +9,13 @@ import matplotlib
 
 matplotlib.use("Agg")
 import seaborn as sns
-from config import TRAIN_CONFIG, FIGURES_DIR, DATASET_CONFIGS
+from config import (
+    TRAIN_CONFIG,
+    FIGURES_DIR,
+    DATASET_CONFIGS,
+    DATASET_TRAIN_OVERRIDES,
+    MODEL_CONFIG,
+)
 from models.ms_kanconv import MSKANConv
 from models.kan_modules import KANActivation
 from train import set_seed, get_device, train_model
@@ -17,6 +23,7 @@ from datasets.uci_har import load_uci_har
 from datasets.pamap2 import load_pamap2, get_pamap2_fold
 from datasets.mhealth import load_mhealth, get_mhealth_fold
 from datasets.wisdm import load_wisdm, get_wisdm_fold
+from datasets.unimib_shar import load_unimib_shar, get_unimib_shar_fold
 
 
 def plot_kan_activations(model, save_path, dataset_name=""):
@@ -172,7 +179,7 @@ def run_interpretability():
             ),
         },
     }
-    for dataset_name in ["uci_har", "pamap2", "mhealth", "wisdm"]:
+    for dataset_name in ["uci_har", "pamap2", "mhealth", "wisdm", "unimib_shar"]:
         print(f"\n{'='*60}")
         print(f"Interpretability: {dataset_name}")
         print(f"{'='*60}")
@@ -194,9 +201,18 @@ def run_interpretability():
             train_ds, test_ds = get_wisdm_fold(
                 X, y, user, 0, cfg.n_folds, TRAIN_CONFIG.seed
             )
+        elif dataset_name == "unimib_shar":
+            X, y, subj, cfg = load_unimib_shar()
+            train_ds, test_ds = get_unimib_shar_fold(
+                X, y, subj, 0, cfg.n_folds, TRAIN_CONFIG.seed
+            )
+        overrides = DATASET_TRAIN_OVERRIDES.get(dataset_name, {})
+        dataset_dropout = overrides.get("dropout", MODEL_CONFIG.dropout)
+        dataset_mixup = overrides.get("mixup_alpha", 0.2)
         model = MSKANConv(
             input_channels=cfg.input_channels,
             num_classes=cfg.num_classes,
+            dropout=dataset_dropout,
         )
         print("  Training model for interpretability analysis...")
         train_model(
@@ -207,6 +223,7 @@ def run_interpretability():
             dataset_name=dataset_name,
             device=device,
             verbose=True,
+            mixup_alpha=dataset_mixup,
         )
         act_path = os.path.join(FIGURES_DIR, f"kan_activations_{dataset_name}.png")
         plot_kan_activations(model, act_path, dataset_name)

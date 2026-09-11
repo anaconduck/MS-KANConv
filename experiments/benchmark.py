@@ -3,7 +3,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
-from config import TRAIN_CONFIG, BASELINE_MODELS
+from config import TRAIN_CONFIG, BASELINE_MODELS, DATASET_TRAIN_OVERRIDES, MODEL_CONFIG
 from models.ms_kanconv import MSKANConv
 from models.baselines import get_baseline_model
 from train import (
@@ -18,6 +18,7 @@ from datasets.uci_har import load_uci_har
 from datasets.pamap2 import load_pamap2, get_pamap2_fold
 from datasets.mhealth import load_mhealth, get_mhealth_fold
 from datasets.wisdm import load_wisdm, get_wisdm_fold
+from datasets.unimib_shar import load_unimib_shar, get_unimib_shar_fold
 
 
 def run_benchmark_single_dataset(dataset_name: str, device=None):
@@ -45,9 +46,18 @@ def run_benchmark_single_dataset(dataset_name: str, device=None):
             get_wisdm_fold(X, y, subj, f, cfg.n_folds, TRAIN_CONFIG.seed)
             for f in range(cfg.n_folds)
         ]
+    elif dataset_name == "unimib_shar":
+        X, y, subj, cfg = load_unimib_shar()
+        folds = [
+            get_unimib_shar_fold(X, y, subj, f, cfg.n_folds, TRAIN_CONFIG.seed)
+            for f in range(cfg.n_folds)
+        ]
     else:
         raise ValueError(f"Unknown dataset: {dataset_name}")
     all_models = BASELINE_MODELS + ["ms_kanconv"]
+    overrides = DATASET_TRAIN_OVERRIDES.get(dataset_name, {})
+    dataset_dropout = overrides.get("dropout", MODEL_CONFIG.dropout)
+    dataset_mixup = overrides.get("mixup_alpha", 0.2)
     results = []
     for model_name in all_models:
         print(f"\n{'='*60}")
@@ -60,12 +70,14 @@ def run_benchmark_single_dataset(dataset_name: str, device=None):
                 model = MSKANConv(
                     input_channels=cfg.input_channels,
                     num_classes=cfg.num_classes,
+                    dropout=dataset_dropout,
                 )
             else:
                 model = get_baseline_model(
                     model_name,
                     input_channels=cfg.input_channels,
                     num_classes=cfg.num_classes,
+                    dropout=dataset_dropout,
                 )
             fold_label = f"fold{fold_idx+1}/{len(folds)}"
             if len(folds) == 1:
@@ -80,6 +92,7 @@ def run_benchmark_single_dataset(dataset_name: str, device=None):
                 fold=fold_idx + 1,
                 device=device,
                 verbose=True,
+                mixup_alpha=dataset_mixup,
             )
             fold_results.append(result)
         avg_result = {
@@ -104,7 +117,7 @@ def run_benchmark_single_dataset(dataset_name: str, device=None):
 def run_benchmark():
     device = get_device()
     all_results = {}
-    for dataset_name in ["uci_har", "pamap2", "mhealth", "wisdm"]:
+    for dataset_name in ["uci_har", "pamap2", "mhealth", "wisdm", "unimib_shar"]:
         print(f"\n{'#'*70}")
         print(f"# DATASET: {dataset_name}")
         print(f"{'#'*70}")

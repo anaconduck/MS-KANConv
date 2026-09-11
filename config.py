@@ -45,7 +45,7 @@ PAMAP2_CONFIG = DatasetConfig(
     num_classes=12,
     input_channels=18,
     sampling_rate=100,
-    window_size=128,
+    window_size=256,
     overlap=0.5,
     n_folds=5,
     activity_labels=[
@@ -91,7 +91,7 @@ WISDM_CONFIG = DatasetConfig(
     num_classes=6,
     input_channels=3,
     sampling_rate=20,
-    window_size=128,
+    window_size=64,
     overlap=0.5,
     n_folds=5,
     activity_labels=[
@@ -103,11 +103,74 @@ WISDM_CONFIG = DatasetConfig(
         "Standing",
     ],
 )
+UNIMIB_SHAR_CONFIG = DatasetConfig(
+    name="UniMiB-SHAR",
+    num_classes=17,
+    input_channels=3,
+    sampling_rate=50,
+    window_size=151,
+    overlap=0.0,
+    n_folds=5,
+    activity_labels=[
+        "StandingUpFS",
+        "StandingUpFL",
+        "Walking",
+        "Running",
+        "GoingUpS",
+        "Jumping",
+        "GoingDownS",
+        "LyingDownFS",
+        "SittingDown",
+        "FallingForw",
+        "FallingRight",
+        "FallingBack",
+        "HitObstacleFalling",
+        "FallingWithPS",
+        "FallingBackSC",
+        "Syncope",
+        "FallingLeft",
+    ],
+)
 DATASET_CONFIGS = {
     "uci_har": UCI_HAR_CONFIG,
     "pamap2": PAMAP2_CONFIG,
     "mhealth": MHEALTH_CONFIG,
     "wisdm": WISDM_CONFIG,
+    "unimib_shar": UNIMIB_SHAR_CONFIG,
+}
+
+# Dataset-adaptive training hyperparameters
+DATASET_TRAIN_OVERRIDES = {
+    "uci_har": {
+        "mixup_alpha": 0.2,
+        "dropout": 0.4,
+        "label_smoothing": 0.0,
+        "use_class_weights": False,
+    },
+    "pamap2": {
+        "mixup_alpha": 0.1,
+        "dropout": 0.3,
+        "label_smoothing": 0.05,
+        "use_class_weights": True,   # Rope Jumping & Nordic Walking jarang
+    },
+    "mhealth": {
+        "mixup_alpha": 0.2,
+        "dropout": 0.4,
+        "label_smoothing": 0.0,
+        "use_class_weights": False,
+    },
+    "wisdm": {
+        "mixup_alpha": 0.0,
+        "dropout": 0.2,
+        "label_smoothing": 0.05,
+        "use_class_weights": True,   # Walking/Jogging vs Sitting/Standing: rasio ~9:1
+    },
+    "unimib_shar": {
+        "mixup_alpha": 0.0,          # Dimatikan: mixing fall+ADL berbahaya
+        "dropout": 0.2,
+        "label_smoothing": 0.1,      # Kelas fall saling mirip — smoothing membantu
+        "use_class_weights": True,   # ADL (60 sampel) vs Fall (180 sampel): rasio 3:1
+    },
 }
 
 
